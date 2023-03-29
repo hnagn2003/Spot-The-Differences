@@ -88,7 +88,7 @@ def segment(img, level):
 def random_array(nums_of_spots, n):
     random_spots = []
 
-    for i in range(nums_of_spots):
+    for i in range (nums_of_spots):
         random_spots.append(random.randint(0, n))
         # 0 for remove, 1 for change color, 2 for rotate
 
@@ -118,7 +118,7 @@ def main():
     input_img = cv2.imread(args.input_image)
     labels_image, objects = segment(input_img, args.level)
     #define number of differences modified for image
-    nums_of_spots = args.nums_of_spots
+    nums_of_spots = int(args.nums_of_spots)
 
     #create random spots and pick random modify for each spot
     random_modify = random_array(nums_of_spots, 2) #3 modify actions
@@ -136,8 +136,8 @@ def main():
     output_dir = os.path.join(args.output, now)
     print(output_dir)
     os.makedirs(output_dir, exist_ok=True)
+    output_img = input_img.copy()
     for i, obj in enumerate (random_objs):
-        output_img = input_img.copy()
         label_to_change = obj['label']
         modify = random_modify[i]
         object_color = background_color if modify == 0 else get_random_color()
@@ -146,7 +146,7 @@ def main():
         output_img[labels_image == (label_to_change+1)] = object_color
         img_id = datetime.datetime.now().strftime('%f')
 
-        cv2.imwrite(output_dir+'/'+img_id+'.png', output_img)
+    cv2.imwrite(output_dir+'/'+img_id+'.png', output_img)
 
 if __name__ == '__main__':
     main()

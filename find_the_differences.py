@@ -23,73 +23,58 @@ def threshold(tup1, tup2):
 
 
 def main(IMG1, IMG2):
-    img1 = Image.open(IMG1)
-    img2 = Image.open(IMG2)
-    resultImg = img1.copy()
-    x, y = min(img1.size[0], img2.size[0]), min(img1.size[1], img2.size[1])
-    grid = [[0]*y]*x
-    pixImg1 = img1.load()
-    pixImg2 = img2.load()
-    resultPix = resultImg.load()
-    for i in range(x):
-        for j in range(y):
-            if(threshold(pixImg1[i,j], pixImg2[i,j])):
-            # if(pixImg1[i, j]!=pixImg2[i, j]):
-                grid[i][j]=1
-                resultPix[i,j]=(255, 255, 255)
-            else:
-                resultPix[i, j]=(0, 0, 0)
+
     # resultImg.save('result.png')
-    finalDetect(IMG1, IMG2, resultImg)
+    detect_differences(IMG1, IMG2)
 
 
-def finalDetect(IMG1, IMG2, res):
-    orgImage1 = cv2.imread(IMG1)
-    orgImage2 = cv2.imread(IMG2)
-    img = np.array(res)
-    dst = cv2.fastNlMeansDenoisingColored(img,None,180,180,7,21)
-    gray = cv2.cvtColor(dst, cv2.COLOR_BGR2GRAY)
-    blurred = cv2.GaussianBlur(gray, (11, 11), 0)
+def detect_differences(img1_path, img2_path, threshold=10, min_blob_size=0):
+    img1 = cv2.imread(img1_path)
+    img2 = cv2.imread(img2_path)
     
-    thresh = cv2.threshold(blurred, 105, 255, cv2.THRESH_BINARY)[1]
-    thresh = cv2.erode(thresh, None, iterations=2)
-    thresh = cv2.dilate(thresh, None, iterations=4)
+    # Convert images to grayscale and blur them
+    gray1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
+    gray2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
+    blurred1 = cv2.GaussianBlur(gray1, (11, 11), 0)
+    blurred2 = cv2.GaussianBlur(gray2, (11, 11), 0)
+
+    # Compute absolute difference between the images and threshold the result
+    diff = cv2.absdiff(blurred1, blurred2)
+
+    _, thresh = cv2.threshold(diff, threshold, 255, cv2.THRESH_BINARY)
+
+    # Apply morphological operations to clean up the thresholded image
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+    thresh = cv2.erode(thresh, kernel, iterations=2)
+    thresh = cv2.dilate(thresh, kernel, iterations=4)
+
+    # Label and filter blobs in the thresholded image
     labels = measure.label(thresh, connectivity=2, background=0)
     mask = np.zeros(thresh.shape, dtype="uint8")
     for label in np.unique(labels):
-        # if this is the background label, ignore it
         if label == 0:
             continue
-        # otherwise, construct the label mask and count the
-        # number of pixels 
         labelMask = np.zeros(thresh.shape, dtype="uint8")
         labelMask[labels == label] = 255
         numPixels = cv2.countNonZero(labelMask)
-        # if the number of pixels in the component is sufficiently
-        # large, then add it to our mask of "large blobs"
-        if numPixels > 300:
+        if numPixels > min_blob_size:
             mask = cv2.add(mask, labelMask)
 
-    cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL,	cv2.CHAIN_APPROX_SIMPLE)
+    # Find contours of the blobs and draw circles around them on the original images
+    cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     cnts = imutils.grab_contours(cnts)
     cnts = contours.sort_contours(cnts)[0]
-    # loop over the contours
     for (i, c) in enumerate(cnts):
-        # draw the bright spot on the image
         (x, y, w, h) = cv2.boundingRect(c)
         ((cX, cY), radius) = cv2.minEnclosingCircle(c)
-        cv2.circle(orgImage1, (int(cX), int(cY)), int(radius), (0, 0, 255), 3)
-        cv2.circle(orgImage2, (int(cX), int(cY)), int(radius), (0, 0, 255), 3)
-        cv2.circle(orgImage1, (int(cX), int(cY)), int(radius), (0, 0, 255), 3)
-        cv2.putText(orgImage2, "#{}".format(i + 1), (x, y - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255), 2)
-        cv2.putText(orgImage1, "#{}".format(i + 1), (x, y - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255), 2)
-    res = np.concatenate((orgImage1, orgImage2), axis=1)
-
-    invertImg1 = cv2.cvtColor(orgImage1, cv2.COLOR_BGR2RGB)
-    invertImg2 = cv2.cvtColor(orgImage2, cv2.COLOR_BGR2RGB)
-    plt.subplot(121), plt.imshow(invertImg1)
-    plt.subplot(122), plt.imshow(invertImg2)
+        cv2.circle(img1, (int(cX), int(cY)), int(radius), (0, 0, 255), 3)
+        cv2.circle(img2, (int(cX), int(cY)), int(radius), (0, 0, 255), 3)
+    res = np.concatenate((img1, img2), axis=1)
     cv2.imwrite('result.png', res)
+    # Display the resulting images
+    fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(300, 100))
+    axes[0].imshow(img1[...,::-1])
+    axes[1].imshow(img2[...,::-1])
     plt.show()
 
 if __name__ == "__main__":
