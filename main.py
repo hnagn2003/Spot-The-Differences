@@ -55,16 +55,16 @@ def segment(img, level):
     props = measure.regionprops(labels_image, intensity_image=img)
 
     # filter regions based on size and shape
-    min_area = 50  # minimum area of an object in pixels
-    max_area = 100
+    min_area = 100  # minimum area of an object in pixels
+    max_area = 100000
     max_eccentricity = 0.8  # maximum eccentricity of an object
     if (level == 1):
         min_area = 50  # minimum area of an object in pixels
-        max_area = 100
+        max_area = 100000
         max_eccentricity = 0.8  # maximum eccentricity of an object
     if (level == 2):
         min_area = 25  # minimum area of an object in pixels
-        max_area = 50
+        max_area = 100
         max_eccentricity = 0.8  # maximum eccentricity of an object
         
     objects = []
@@ -130,8 +130,11 @@ def main():
     
     background_color = get_background_color(input_img)
 
+    if not os.path.exists('output'):
+        os.makedirs('output')
     now = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S-%f')
     output_dir = os.path.join(args.output, now)
+    print(output_dir)
     os.makedirs(output_dir, exist_ok=True)
     for i, obj in enumerate (random_objs):
         output_img = input_img.copy()
@@ -141,34 +144,9 @@ def main():
 
         # Set the pixel values of the object to the desired color using NumPy indexing
         output_img[labels_image == (label_to_change+1)] = object_color
-        if not os.path.exists('output'):
-            os.makedirs('output')
-    for i, obj in enumerate (random_objs):
-        label_to_change = obj['label']
+        img_id = datetime.datetime.now().strftime('%f')
 
-        object_color = (0, 0, 255)  # red color
-
-        # Set the pixel values of the object to the desired color using NumPy indexing
-        output_img[labels_image == (label_to_change+1)] = object_color
-
-
-        # Drawing bbox
-        # bbox = []
-        # for obj in objects:
-        #     if (obj['label'] == label_to_change):
-        #         bbox = obj['bbox']
-        # output_img = cv2.rectangle(output_img, (bbox[1], bbox[0]), (bbox[3], bbox[2]), (255, 0, 0), 2)
-
-        if not os.path.exists('output'):
-            os.makedirs('output')
-
-        
-        print(output_dir)
-
-        # filename = f'image_{i}.jpg'
-        # output_path = os.path.join(output_dir, filename)
-        # cv2.imwrite(output_path, output_img)
-    
+        cv2.imwrite(output_dir+'/'+img_id+'.png', output_img)
 
 if __name__ == '__main__':
     main()
