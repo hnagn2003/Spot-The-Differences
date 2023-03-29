@@ -1,4 +1,4 @@
-# XuLyAnh
+# Bài tập Xử Lý Ảnh giữa kỳ - UET
 
 # Link Github
 
