@@ -70,7 +70,7 @@ def detect_differences(img1_path, img2_path, threshold=10, min_blob_size=0):
         cv2.circle(img1, (int(cX), int(cY)), int(radius), (0, 0, 255), 3)
         cv2.circle(img2, (int(cX), int(cY)), int(radius), (0, 0, 255), 3)
     res = np.concatenate((img1, img2), axis=1)
-    cv2.imwrite('result.png', res)
+    cv2.imwrite('level_3/result.png', res)
     # Display the resulting images
     fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(300, 100))
     axes[0].imshow(img1[...,::-1])
